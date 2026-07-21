@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#8d1028">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Fatec Flow">
+  <meta name="description" content="Sistema acadêmico pessoal para organizar semestres, disciplinas, avaliações, notas, frequência e Google Calendar.">
+  <link rel="icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="assets/icons/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+  <title>Fatec Flow — iPhone</title>
+</head>
+<body>
+  <div id="bootScreen" class="boot-screen" aria-live="polite">
+    <img src="assets/logo-fatec-bauru-crop.png" alt="Fatec Bauru">
+    <div class="loader"></div>
+    <p>Preparando seu painel acadêmico…</p>
+  </div>
+
+  <section id="authGate" class="auth-gate hidden" aria-labelledby="authTitle">
+    <div class="auth-card">
+      <img src="assets/logo-fatec-bauru-crop.png" alt="Fatec Bauru" class="auth-logo">
+      <span class="eyebrow">FATEC FLOW</span>
+      <h1 id="authTitle">Proteja seus dados acadêmicos</h1>
+      <p id="authDescription" class="muted">Crie uma senha local. Ela não sai do seu aparelho.</p>
+
+      <form id="setupPasswordForm" class="auth-form hidden">
+        <label>Nova senha
+          <input id="setupPassword" type="password" minlength="4" maxlength="80" autocomplete="new-password" required placeholder="Mínimo de 4 caracteres">
+        </label>
+        <label>Confirmar senha
+          <input id="setupPasswordConfirm" type="password" minlength="4" maxlength="80" autocomplete="new-password" required placeholder="Digite novamente">
+        </label>
+        <button class="primary wide" type="submit">Criar senha e entrar</button>
+      </form>
+
+      <form id="unlockForm" class="auth-form hidden">
+        <label>Senha
+          <input id="unlockPassword" type="password" autocomplete="current-password" required placeholder="Digite sua senha">
+        </label>
+        <button class="primary wide" type="submit">Entrar no Fatec Flow</button>
+        <button id="forgotPasswordButton" class="text-button danger-text" type="button">Esqueci a senha</button>
+      </form>
+      <p class="auth-warning">Sem servidor e sem recuperação por e-mail. Guarde um backup JSON regularmente.</p>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <header class="mobile-header" aria-label="Cabeçalho do aplicativo">
+      <button class="mobile-brand-button" data-view="dashboard" type="button" aria-label="Ir para Hoje">
+        <img src="assets/icons/icon-96.png" alt="">
+        <span><strong id="mobilePageTitle">Hoje</strong><small id="mobileSemesterLabel">2026/2</small></span>
+      </button>
+      <div class="mobile-header-actions">
+        <button id="mobileSyncButton" class="mobile-icon-button" type="button" aria-label="Sincronizar com Google">↻</button>
+        <button id="mobileNotificationButton" class="mobile-icon-button" type="button" aria-label="Abrir avisos">🔔<span id="mobileNotificationBadge" class="counter hidden">0</span></button>
+      </div>
+    </header>
+    <aside class="sidebar">
+      <div class="brand">
+        <img src="assets/logo-fatec-bauru-crop.png" alt="Fatec Bauru">
+        <div><strong>Fatec Flow</strong><small>Sistema acadêmico pessoal</small></div>
+      </div>
+
+      <div class="semester-switcher">
+        <label for="activeSemesterSelect">Semestre em uso</label>
+        <select id="activeSemesterSelect"></select>
+        <button id="quickSemesterButton" class="small-action" type="button">Gerenciar semestres</button>
+      </div>
+
+      <nav class="app-nav" aria-label="Navegação principal">
+        <button class="nav-item active" data-view="dashboard" type="button"><span>⌂</span><b>Visão geral</b></button>
+        <button class="nav-item" data-view="agenda" type="button"><span>▦</span><b>Agenda</b></button>
+        <button class="nav-item" data-view="semesters" type="button"><span>◫</span><b>Semestres</b></button>
+        <button class="nav-item" data-view="subjects" type="button"><span>◉</span><b>Disciplinas</b></button>
+        <button class="nav-item" data-view="teachers" type="button"><span>♟</span><b>Professores</b></button>
+        <button class="nav-item" data-view="evaluations" type="button"><span>✦</span><b>Avaliações e notas</b></button>
+        <button class="nav-item" data-view="attendance" type="button"><span>✓</span><b>Frequência</b></button>
+        <button class="nav-item" data-view="official" type="button"><span>▤</span><b>Calendário oficial</b></button>
+        <button class="nav-item" data-view="settings" type="button"><span>⚙</span><b>Configurações</b></button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button id="lockButton" class="secondary wide" type="button">🔒 Bloquear agora</button>
+        <small>Dados salvos localmente no aparelho</small><small>Versão 3.0.0 — iPhone Edition</small>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <span id="pageEyebrow" class="eyebrow">PAINEL ACADÊMICO</span>
+          <h1 id="pageTitle">Visão geral</h1>
+        </div>
+        <div class="topbar-actions">
+          <button id="notificationCenterButton" class="icon-button" type="button" aria-label="Central de avisos">🔔<span id="notificationBadge" class="counter hidden">0</span></button>
+          <button id="syncTopButton" class="secondary" type="button">↻ Sincronizar</button>
+          <button class="primary" data-open="activity" type="button">＋ Nova atividade</button>
+        </div>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <article class="hero university-bg">
+          <div class="hero-copy">
+            <span class="eyebrow">ORGANIZAÇÃO UNIVERSITÁRIA</span>
+            <h2 id="heroGreeting">Seu semestre em um só lugar.</h2>
+            <p id="heroSemesterText">Cadastre um semestre para começar.</p>
+            <div class="hero-actions">
+              <button class="primary" data-open="activity" type="button">＋ Prova, atividade ou seminário</button>
+              <button class="secondary" data-open="event" type="button">＋ Evento</button>
+            </div>
+          </div>
+          <div class="hero-words" aria-hidden="true">
+            <span>PROVAS</span><span>PROJETOS</span><span>SEMINÁRIOS</span><span>NOTAS</span>
+            <span>PESQUISA</span><span>ESTÁGIO</span><span>ENTREGAS</span><span>FORMATURA</span>
+          </div>
+        </article>
+
+        <div class="metric-grid">
+          <article class="metric-card"><span>Próximo compromisso</span><strong id="metricNext">—</strong><small id="metricNextMeta">Nenhum compromisso</small></article>
+          <article class="metric-card"><span>Média geral</span><strong id="metricAverage">—</strong><small id="metricAverageMeta">Sem notas calculadas</small></article>
+          <article class="metric-card"><span>Frequência geral</span><strong id="metricAttendance">—</strong><small id="metricAttendanceMeta">Sem registros</small></article>
+          <article class="metric-card"><span>Pendências</span><strong id="metricPending">0</strong><small id="metricPendingMeta">Tudo em dia</small></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel span-2">
+            <div class="panel-head"><div><span class="eyebrow">HOJE</span><h3>Agenda do dia</h3></div><button class="text-button" data-go="agenda" type="button">Abrir agenda</button></div>
+            <div id="todayTimeline" class="timeline"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><span class="eyebrow">PRIORIDADES</span><h3>Próximas avaliações</h3></div><button class="text-button" data-go="evaluations" type="button">Ver todas</button></div>
+            <div id="upcomingActivities" class="compact-list"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-head"><div><span class="eyebrow">DESEMPENHO</span><h3>Disciplinas em atenção</h3></div><button class="text-button" data-go="subjects" type="button">Ver disciplinas</button></div>
+            <div id="riskSubjects" class="compact-list"></div>
+          </article>
+          <article class="panel mobile-calc-card">
+            <div class="panel-head"><div><span class="eyebrow">NOTAS</span><h3>Cálculo da média</h3></div><span class="mobile-step-badge">3 etapas</span></div>
+            <p class="muted">1. Cadastre as avaliações. 2. Lance as notas. 3. Monte a fórmula do professor.</p>
+            <div class="mobile-calc-actions">
+              <button class="primary" data-go="evaluations" data-eval-tab="activities" type="button">Cadastrar avaliação</button>
+              <button class="secondary" data-go="evaluations" data-eval-tab="formulas" type="button">Montar cálculo</button>
+            </div>
+          </article>
+
+          <article class="panel span-2">
+            <div class="panel-head"><div><span class="eyebrow">ATALHOS</span><h3>Registrar rapidamente</h3></div></div>
+            <div class="quick-actions">
+              <button data-quick-activity="prova" type="button"><span>📝</span>Prova</button>
+              <button data-quick-activity="atividade" type="button"><span>✅</span>Atividade</button>
+              <button data-quick-activity="seminario" type="button"><span>🎤</span>Seminário</button>
+              <button data-quick-activity="entrega" type="button"><span>📦</span>Entrega</button>
+              <button data-open="attendance" type="button"><span>📍</span>Presença</button>
+              <button data-open="subject" type="button"><span>📚</span>Disciplina</button>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-agenda" class="view">
+        <div class="section-actions">
+          <div class="filter-bar">
+            <input id="agendaSearch" type="search" placeholder="Buscar por título, disciplina ou local…">
+            <select id="agendaTypeFilter"><option value="">Todos os tipos</option></select>
+            <select id="agendaSubjectFilter"><option value="">Todas as disciplinas</option></select>
+            <select id="agendaStatusFilter"><option value="">Todos os status</option><option value="pendente">Pendente</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option></select>
+          </div>
+          <div class="button-row"><button class="secondary" data-open="event" type="button">＋ Evento</button><button class="primary" data-open="activity" type="button">＋ Atividade acadêmica</button></div>
+        </div>
+        <div id="agendaList" class="agenda-list"></div>
+      </section>
+
+      <section id="view-semesters" class="view">
+        <div class="section-actions">
+          <div class="section-copy"><p>Todo item acadêmico precisa pertencer a um semestre e respeitar suas datas.</p></div>
+          <button class="primary" data-open="semester" type="button">＋ Cadastrar semestre</button>
+        </div>
+        <div id="semesterList" class="card-grid"></div>
+      </section>
+
+      <section id="view-subjects" class="view">
+        <div class="section-actions">
+          <div class="filter-bar"><input id="subjectSearch" type="search" placeholder="Buscar disciplina…"><select id="subjectTeacherFilter"><option value="">Todos os professores</option></select></div>
+          <button class="primary" data-open="subject" type="button">＋ Cadastrar disciplina</button>
+        </div>
+        <div id="subjectGrid" class="subject-grid"></div>
+      </section>
+
+      <section id="view-teachers" class="view">
+        <div class="section-actions">
+          <p>Cadastre os professores e vincule cada um às disciplinas do semestre.</p>
+          <button class="primary" data-open="teacher" type="button">＋ Cadastrar professor</button>
+        </div>
+        <div id="teacherGrid" class="card-grid"></div>
+      </section>
+
+      <section id="view-evaluations" class="view">
+        <div class="subtabs" role="tablist">
+          <button class="active" data-eval-tab="activities" type="button">1. Avaliações</button>
+          <button data-eval-tab="formulas" type="button">2. Cálculo</button>
+          <button data-eval-tab="simulator" type="button">3. Simular</button>
+        </div>
+
+        <div id="evalTabActivities" class="eval-tab active">
+          <div class="section-actions">
+            <div class="filter-bar"><input id="activitySearch" type="search" placeholder="Buscar avaliação…"><select id="activitySubjectFilter"><option value="">Todas as disciplinas</option></select><select id="activityTypeFilter"><option value="">Todos os tipos</option></select></div>
+            <button class="primary" data-open="activity" type="button">＋ Nova avaliação</button>
+          </div>
+          <div id="activityList" class="agenda-list"></div>
+        </div>
+
+        <div id="evalTabFormulas" class="eval-tab">
+          <article class="mobile-formula-guide">
+            <span><b>1</b> Cadastre as avaliações</span>
+            <span><b>2</b> Lance as notas</span>
+            <span><b>3</b> Toque nas variáveis e monte a fórmula</span>
+          </article>
+          <div class="formula-layout">
+            <aside class="panel formula-subjects"><h3>Disciplinas</h3><div id="formulaSubjectList" class="selection-list"></div></aside>
+            <article class="panel formula-editor-panel">
+              <div id="formulaEmpty" class="empty-state">Selecione uma disciplina para configurar o método do professor.</div>
+              <div id="formulaEditor" class="hidden">
+                <div class="panel-head"><div><span class="eyebrow">MÉTODO DE AVALIAÇÃO</span><h3 id="formulaSubjectTitle">Disciplina</h3><p id="formulaProfessorName" class="muted"></p></div><span id="formulaStatus" class="tag">Não configurado</span></div>
+                <label>Fórmula manual
+                  <textarea id="formulaInput" rows="3" placeholder="Ex.: (P1 * 0.4) + (P2 * 0.4) + (TRAB * 0.2)"></textarea>
+                </label>
+                <div class="formula-tools">
+                  <div><small>Atividades disponíveis</small><div id="formulaVariableButtons" class="token-buttons"></div></div>
+                  <div><small>Operadores</small><div class="token-buttons"><button data-token=" + " type="button">＋</button><button data-token=" - " type="button">−</button><button data-token=" * " type="button">×</button><button data-token=" / " type="button">÷</button><button data-token="(" type="button">(</button><button data-token=")" type="button">)</button></div></div>
+                </div>
+                <div class="form-grid compact">
+                  <label>Quando faltar nota<select id="formulaMissingPolicy"><option value="block">Não calcular</option><option value="zero">Considerar zero</option><option value="simulation">Usar valor simulado</option></select></label>
+                  <label>Casas decimais<select id="formulaDecimals"><option value="0">0</option><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></label>
+                  <label>Arredondamento<select id="formulaRounding"><option value="normal">Normal</option><option value="up">Sempre para cima</option><option value="down">Sempre para baixo</option></select></label>
+                  <label>Nota mínima<input id="formulaPassingGrade" type="number" min="0" step="0.01" value="6"></label>
+                </div>
+                <div id="formulaValidation" class="validation-box neutral">Monte a fórmula usando as atividades cadastradas.</div>
+                <div class="formula-preview">
+                  <div><span>Média calculada</span><strong id="formulaResult">—</strong></div>
+                  <div><span>Situação</span><strong id="formulaSituation">—</strong></div>
+                  <div><span>Nota necessária</span><strong id="formulaNeeded">—</strong></div>
+                </div>
+                <div class="button-row end"><button id="suggestFormulaButton" class="secondary" type="button">Sugerir pelos pesos</button><button id="saveFormulaButton" class="primary" type="button">Salvar método</button></div>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div id="evalTabSimulator" class="eval-tab">
+          <article class="panel">
+            <div class="panel-head"><div><span class="eyebrow">CENÁRIOS</span><h3>Simulador de notas</h3></div></div>
+            <div class="form-grid compact"><label>Disciplina<select id="simulatorSubject"></select></label></div>
+            <div id="simulatorFields" class="simulation-grid"></div>
+            <div id="simulatorResult" class="validation-box neutral">Escolha uma disciplina com fórmula configurada.</div>
+          </article>
+        </div>
+      </section>
+
+      <section id="view-attendance" class="view">
+        <div class="attendance-summary-grid">
+          <article class="metric-card"><span>Frequência do semestre</span><strong id="attendanceOverall">—</strong><small id="attendanceOverallMeta">Sem registros</small></article>
+          <article class="metric-card"><span>Aulas não verificadas</span><strong id="attendanceUnverified">0</strong><small>Confirme após cada encontro</small></article>
+          <article class="metric-card"><span>Em risco</span><strong id="attendanceRisk">0</strong><small>Abaixo do limite definido</small></article>
+        </div>
+        <div id="attendanceSubjectSummary" class="subject-grid attendance-subject-grid"></div>
+        <div class="section-actions">
+          <div class="filter-bar"><select id="attendanceSubjectFilter"><option value="">Todas as disciplinas</option></select><select id="attendanceStatusFilter"><option value="">Todos os status</option><option value="unverified">Não verificada</option><option value="present">Presente</option><option value="late">Atrasado</option><option value="partial">Parcial</option><option value="absent">Ausente</option><option value="justified">Falta justificada</option><option value="cancelled">Aula cancelada</option></select></div>
+          <div class="button-row"><button id="generateAttendanceButton" class="secondary" type="button">Gerar pelas aulas da agenda</button><button class="primary" data-open="attendance" type="button">＋ Registrar presença</button></div>
+        </div>
+        <div id="attendanceList" class="agenda-list"></div>
+        <p class="footnote">O controle do Fatec Flow é pessoal. O registro oficial de frequência continua sendo o do professor e do SIGA.</p>
+      </section>
+
+      <section id="view-official" class="view">
+        <article class="panel official-intro">
+          <div><span class="eyebrow">FONTE INSTITUCIONAL</span><h2>Calendário Acadêmico da Fatec Bauru</h2><p>Consulte as imagens salvas no app e confirme atualizações na página oficial.</p></div>
+          <a class="primary link-button" href="https://fatecbauru.cps.sp.gov.br/calendario-academico/" target="_blank" rel="noopener noreferrer">Abrir página oficial</a>
+        </article>
+        <div class="calendar-gallery">
+          <figure><img src="assets/calendar/calendario-2026-p4.jpg" alt="Calendário acadêmico 2026, página 4"><figcaption>Calendário acadêmico 2026 — página 4</figcaption></figure>
+          <figure><img src="assets/calendar/calendario-2026-p5.jpg" alt="Calendário acadêmico 2026, página 5"><figcaption>Calendário acadêmico 2026 — página 5</figcaption></figure>
+          <figure><img src="assets/calendar/calendario-2026-p6.jpg" alt="Calendário acadêmico 2026, página 6"><figcaption>Calendário acadêmico 2026 — página 6</figcaption></figure>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="settings-jump">
+          <button data-scroll-settings="google" type="button">Google Calendar</button>
+          <button data-scroll-settings="notifications" type="button">Notificações</button>
+          <button data-scroll-settings="security" type="button">Segurança</button>
+          <button data-scroll-settings="campus" type="button">Presença</button>
+          <button data-scroll-settings="data" type="button">Dados</button>
+          <button data-scroll-settings="appearance" type="button">Aparência</button>
+        </div>
+
+        <div class="settings-grid">
+          <article id="settings-google" class="panel settings-card span-2">
+            <div class="panel-head"><div><span class="eyebrow">SINCRONIZAÇÃO</span><h3>Google Calendar</h3></div><span id="googleStatus" class="tag">Desconectado</span></div>
+            <p>Use somente o Client ID OAuth. Não coloque segredo do cliente ou API Key.</p>
+            <div class="form-grid compact">
+              <label class="span-2">Client ID OAuth<input id="googleClientId" type="text" placeholder="…apps.googleusercontent.com"></label>
+              <label>Calendário<select id="googleCalendarId"><option value="primary">Principal</option></select></label>
+              <label class="toggle-field"><span>Marcar eventos com o semestre</span><input id="googleTagSemester" type="checkbox" checked></label>
+            </div>
+            <div class="button-row wrap"><button id="saveGoogleSettingsButton" class="secondary" type="button">Salvar configuração</button><button id="connectGoogleButton" class="primary" type="button">Conectar ao Google</button><button id="loadCalendarsButton" class="secondary" type="button">Carregar calendários</button><button id="syncGoogleButton" class="secondary" type="button">Sincronizar agora</button><button id="tagAllGoogleButton" class="secondary" type="button">Vincular e atualizar todos no Google</button></div>
+            <div id="syncReport" class="validation-box neutral">Nenhuma sincronização realizada nesta sessão.</div>
+          </article>
+
+          <article id="settings-notifications" class="panel settings-card">
+            <div class="panel-head"><div><span class="eyebrow">ALERTAS</span><h3>Notificações</h3></div><span id="notificationPermission" class="tag">Não autorizadas</span></div>
+            <p>O Google Calendar entrega alertas mesmo com o PWA fechado. Os avisos internos funcionam enquanto o app estiver ativo.</p>
+            <button id="requestNotificationButton" class="secondary wide" type="button">Autorizar notificações do app</button>
+          </article>
+
+          <article id="settings-security" class="panel settings-card">
+            <div class="panel-head"><div><span class="eyebrow">ACESSO</span><h3>Senha e bloqueio</h3></div><span id="securityStatus" class="tag">Ativa</span></div>
+            <label>Bloquear após<select id="lockTimeout"><option value="1">1 minuto</option><option value="5">5 minutos</option><option value="15" selected>15 minutos</option><option value="30">30 minutos</option><option value="60">1 hora</option><option value="0">Somente manualmente</option></select></label>
+            <div class="button-row wrap"><button id="changePasswordButton" class="secondary" type="button">Alterar senha</button><button id="lockSettingsButton" class="secondary" type="button">Bloquear agora</button></div>
+          </article>
+
+          <article id="settings-campus" class="panel settings-card">
+            <div class="panel-head"><div><span class="eyebrow">CHECK-IN</span><h3>Validação assistida de presença</h3></div></div>
+            <p>Opcional. A localização só é consultada quando você toca em “Validar localização”.</p>
+            <div class="form-grid compact"><label>Latitude<input id="campusLatitude" type="number" step="0.000001" placeholder="Ex.: -22.000000"></label><label>Longitude<input id="campusLongitude" type="number" step="0.000001" placeholder="Ex.: -49.000000"></label><label>Raio aceito (metros)<input id="campusRadius" type="number" min="50" step="10" value="500"></label><label>Nome do local<input id="campusName" type="text" value="Fatec Bauru"></label></div>
+            <button id="saveCampusButton" class="secondary wide" type="button">Salvar local de referência</button>
+          </article>
+
+          <article id="settings-data" class="panel settings-card span-2">
+            <div class="panel-head"><div><span class="eyebrow">PORTABILIDADE</span><h3>Importação, backup e restauração</h3></div></div>
+            <div class="data-action-grid">
+              <label class="action-tile">📥<strong>Importar calendário .ics</strong><span>Importa e vincula pela data do semestre.</span><input id="icsImportInput" type="file" accept=".ics,text/calendar" hidden></label>
+              <button id="exportBackupButton" class="action-tile" type="button">💾<strong>Exportar backup JSON</strong><span>Salva semestres, notas, fórmulas e presenças.</span></button>
+              <label class="action-tile">♻️<strong>Restaurar backup</strong><span>Substitui os dados locais pelo arquivo escolhido.</span><input id="backupImportInput" type="file" accept="application/json,.json" hidden></label>
+              <button id="exportIcsButton" class="action-tile" type="button">🗓️<strong>Exportar agenda .ics</strong><span>Gera um arquivo compatível com calendários.</span></button>
+              <button id="openTrashButton" class="action-tile" type="button">🗑️<strong>Abrir lixeira</strong><span>Restaure itens excluídos localmente.</span></button>
+              <button id="resetAppButton" class="action-tile danger-tile" type="button">⚠️<strong>Redefinir aplicativo</strong><span>Apaga todos os dados deste navegador.</span></button>
+            </div>
+          </article>
+
+          <article id="settings-appearance" class="panel settings-card">
+            <div class="panel-head"><div><span class="eyebrow">INTERFACE</span><h3>Aparência</h3></div></div>
+            <label>Tema<select id="themeSelect"><option value="system">Seguir o sistema</option><option value="light">Claro</option><option value="dark">Escuro</option></select></label>
+          </article>
+
+          <article class="panel settings-card">
+            <div class="panel-head"><div><span class="eyebrow">IPHONE</span><h3>Instalar como aplicativo</h3></div></div>
+            <ol class="install-steps"><li>Abra o site no Safari.</li><li>Toque em Compartilhar.</li><li>Escolha “Adicionar à Tela de Início”.</li><li>Ative “Abrir como App da Web”.</li></ol>
+            <button id="installButton" class="primary wide hidden" type="button">Instalar agora</button>
+          </article>
+        </div>
+      </section>
+    </main>
+    <button class="mobile-fab" data-open="activity" type="button" aria-label="Criar nova atividade">＋</button>
+
+    <nav class="mobile-bottom-nav" aria-label="Navegação principal do iPhone">
+      <button class="nav-item active" data-view="dashboard" type="button"><span>⌂</span><b>Hoje</b></button>
+      <button class="nav-item" data-view="agenda" type="button"><span>▦</span><b>Agenda</b></button>
+      <button class="nav-item" data-view="subjects" type="button"><span>◉</span><b>Disciplinas</b></button>
+      <button class="nav-item" data-view="evaluations" type="button"><span>✦</span><b>Notas</b></button>
+      <button class="nav-item" data-mobile-more="open" type="button"><span>•••</span><b>Mais</b></button>
+    </nav>
+
+    <div id="mobileMoreBackdrop" class="mobile-more-backdrop hidden" data-mobile-more="close"></div>
+    <section id="mobileMoreSheet" class="mobile-more-sheet" aria-hidden="true" aria-label="Mais opções">
+      <div class="mobile-sheet-handle"></div>
+      <div class="mobile-more-head">
+        <div><span class="eyebrow">FATEC FLOW</span><h2>Mais recursos</h2></div>
+        <button class="mobile-icon-button" data-mobile-more="close" type="button" aria-label="Fechar">✕</button>
+      </div>
+      <label class="mobile-semester-control">Semestre em uso
+        <select id="mobileSemesterSelect"></select>
+      </label>
+      <div class="mobile-more-grid">
+        <button class="nav-item" data-view="semesters" type="button"><span>◫</span><b>Semestres</b><small>Períodos e datas</small></button>
+        <button class="nav-item" data-view="teachers" type="button"><span>♟</span><b>Professores</b><small>Docentes e contatos</small></button>
+        <button class="nav-item" data-view="attendance" type="button"><span>✓</span><b>Frequência</b><small>Presenças e faltas</small></button>
+        <button class="nav-item" data-view="official" type="button"><span>▤</span><b>Calendário oficial</b><small>Fatec Bauru</small></button>
+        <button class="nav-item" data-view="settings" type="button"><span>⚙</span><b>Configurações</b><small>Google, alertas e backup</small></button>
+        <button id="mobileLockButton" class="nav-item danger-option" type="button"><span>🔒</span><b>Bloquear</b><small>Proteger o aplicativo</small></button>
+      </div>
+      <p class="mobile-local-note">Seus dados acadêmicos ficam armazenados localmente neste aparelho.</p>
+    </section>
+
+  </div>
+
+  <dialog id="semesterDialog" class="modal">
+    <form id="semesterForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">PERÍODO ACADÊMICO</span><h2 id="semesterDialogTitle">Cadastrar semestre</h2></div><button class="icon-button" data-close="semesterDialog" type="button">✕</button></div>
+      <input id="semesterId" type="hidden">
+      <div class="form-grid">
+        <label>Nome do semestre<input id="semesterName" type="text" required placeholder="Ex.: 2026/2"></label>
+        <label>Status<select id="semesterStatus"><option value="active">Ativo</option><option value="planned">Planejado</option><option value="archived">Arquivado</option></select></label>
+        <label>Data inicial<input id="semesterStart" type="date" required></label>
+        <label>Data final<input id="semesterEnd" type="date" required></label>
+        <label>Cor<input id="semesterColor" type="color" value="#a71930"></label>
+        <label class="span-2">Observações<textarea id="semesterNotes" rows="3"></textarea></label>
+      </div>
+      <div id="semesterValidation" class="validation-box neutral">As datas não podem se sobrepor a outro semestre.</div>
+      <div class="modal-actions"><button class="secondary" data-close="semesterDialog" type="button">Cancelar</button><button class="primary" type="submit">Salvar semestre</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="teacherDialog" class="modal small-modal">
+    <form id="teacherForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">DOCENTE</span><h2 id="teacherDialogTitle">Cadastrar professor</h2></div><button class="icon-button" data-close="teacherDialog" type="button">✕</button></div>
+      <input id="teacherId" type="hidden">
+      <div class="form-grid">
+        <label class="span-2">Nome<input id="teacherName" type="text" required></label>
+        <label>E-mail<input id="teacherEmail" type="email"></label>
+        <label>Contato<input id="teacherPhone" type="text"></label>
+        <label class="span-2">Observações<textarea id="teacherNotes" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions"><button class="secondary" data-close="teacherDialog" type="button">Cancelar</button><button class="primary" type="submit">Salvar professor</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="subjectDialog" class="modal">
+    <form id="subjectForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">DISCIPLINA</span><h2 id="subjectDialogTitle">Cadastrar disciplina</h2></div><button class="icon-button" data-close="subjectDialog" type="button">✕</button></div>
+      <input id="subjectId" type="hidden">
+      <div class="form-grid">
+        <label>Semestre<select id="subjectSemester" required></select></label>
+        <label>Professor<select id="subjectTeacher"><option value="">Professor não informado</option></select></label>
+        <label class="span-2">Nome da disciplina<input id="subjectName" type="text" required></label>
+        <label>Código ou sigla<input id="subjectCode" type="text" maxlength="20"></label>
+        <label>Cor<input id="subjectColor" type="color" value="#9b1b30"></label>
+        <label>Tipo de componente<select id="subjectKind"><option value="course">Disciplina com notas e frequência</option><option value="hours">Componente por carga horária</option></select></label>
+        <label>Nota mínima<input id="subjectPassingGrade" type="number" min="0" step="0.01" value="6"></label>
+        <label>Horas exigidas<input id="subjectRequiredHours" type="number" min="0" step="0.5" value="0"></label>
+        <label>Horas concluídas<input id="subjectCompletedHours" type="number" min="0" step="0.5" value="0"></label>
+        <label>Frequência mínima (%)<input id="subjectMinAttendance" type="number" min="0" max="100" step="0.1" value="75"></label>
+        <label>Total estimado de períodos<input id="subjectTotalPeriods" type="number" min="0" step="1" value="0"></label>
+        <label>Períodos por encontro<input id="subjectPeriodsPerClass" type="number" min="1" step="1" value="2"></label>
+        <label class="span-2">Observações<textarea id="subjectNotes" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions"><button class="secondary" data-close="subjectDialog" type="button">Cancelar</button><button class="primary" type="submit">Salvar disciplina</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="activityDialog" class="modal large-modal">
+    <form id="activityForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">AVALIAÇÃO ACADÊMICA</span><h2 id="activityDialogTitle">Cadastrar atividade</h2></div><button class="icon-button" data-close="activityDialog" type="button">✕</button></div>
+      <input id="activityId" type="hidden">
+      <div class="form-grid">
+        <label>Semestre<select id="activitySemester" required></select></label>
+        <label>Disciplina<select id="activitySubject" required></select></label>
+        <label>Tipo<select id="activityType" required></select></label>
+        <label>Código da fórmula<input id="activityCode" type="text" maxlength="24" required placeholder="Ex.: P1, TRAB, SEM"></label>
+        <label class="span-2">Título<input id="activityTitle" type="text" required placeholder="Ex.: Primeira prova"></label>
+        <label>Data<input id="activityDate" type="date" required></label>
+        <label>Dia inteiro<select id="activityAllDay"><option value="false">Não</option><option value="true">Sim</option></select></label>
+        <label>Início<input id="activityStart" type="time" value="19:00"></label>
+        <label>Fim<input id="activityEnd" type="time" value="20:40"></label>
+        <label>Nota máxima<input id="activityMaxScore" type="number" min="0.01" step="0.01" value="10"></label>
+        <label>Nota obtida<input id="activityScore" type="number" min="0" step="0.01" placeholder="Deixe vazio enquanto não sair"></label>
+        <label>Peso opcional (%)<input id="activityWeight" type="number" min="0" max="100" step="0.1" value="0"></label>
+        <label>Valor simulado<input id="activitySimulatedScore" type="number" min="0" step="0.01" placeholder="Para projeções"></label>
+        <label>Status<select id="activityStatus"><option value="planned">Planejada</option><option value="done">Realizada</option><option value="graded">Corrigida</option><option value="cancelled">Cancelada</option></select></label>
+        <label>Prioridade<select id="activityPriority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label>
+        <label class="span-2">Local ou link<input id="activityLocation" type="text"></label>
+        <label class="span-2">Conteúdo e observações<textarea id="activityDescription" rows="4"></textarea></label>
+      </div>
+      <fieldset class="reminder-fieldset"><legend>Alertas</legend><div class="reminder-head"><select id="activityReminderPreset"><option value="recommended">Recomendado</option><option value="essential">Essencial</option><option value="reinforced">Reforçado</option><option value="custom">Personalizado</option><option value="none">Sem alertas</option></select><button id="addActivityReminderButton" class="secondary" type="button">＋ Adicionar alerta</button></div><div id="activityReminderRows" class="reminder-rows"></div><div id="activityReminderPreview" class="reminder-preview"></div></fieldset>
+      <div class="sync-choice"><label class="toggle-field"><span>Sincronizar com Google Calendar</span><input id="activitySyncWanted" type="checkbox" checked></label><small>O evento receberá o semestre e a disciplina no título e na descrição.</small></div>
+      <div id="activityValidation" class="validation-box neutral">A data precisa estar dentro do semestre selecionado.</div>
+      <div class="modal-actions"><button id="activityGoogleTemplateButton" class="secondary" type="button">Abrir preenchido no Google</button><button class="secondary" data-close="activityDialog" type="button">Cancelar</button><button class="primary" type="submit">Salvar atividade</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="eventDialog" class="modal large-modal">
+    <form id="eventForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">AGENDA</span><h2 id="eventDialogTitle">Cadastrar evento</h2></div><button class="icon-button" data-close="eventDialog" type="button">✕</button></div>
+      <input id="eventId" type="hidden">
+      <div class="form-grid">
+        <label>Semestre<select id="eventSemester" required></select></label>
+        <label>Tipo<select id="eventType" required></select></label>
+        <label>Disciplina<select id="eventSubject"><option value="">Sem disciplina</option></select></label>
+        <label>Status<select id="eventStatus"><option value="pendente">Pendente</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option></select></label>
+        <label class="span-2">Título<input id="eventTitle" type="text" required></label>
+        <label>Data<input id="eventDate" type="date" required></label>
+        <label>Dia inteiro<select id="eventAllDay"><option value="false">Não</option><option value="true">Sim</option></select></label>
+        <label>Início<input id="eventStart" type="time" value="19:00"></label>
+        <label>Fim<input id="eventEnd" type="time" value="20:40"></label>
+        <label>Prioridade<select id="eventPriority"><option value="normal">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></label>
+        <label class="span-2">Local<input id="eventLocation" type="text"></label>
+        <label class="span-2">Descrição<textarea id="eventDescription" rows="4"></textarea></label>
+      </div>
+      <fieldset class="reminder-fieldset"><legend>Alertas</legend><div class="reminder-head"><select id="eventReminderPreset"><option value="recommended">Recomendado</option><option value="essential">Essencial</option><option value="reinforced">Reforçado</option><option value="custom">Personalizado</option><option value="none">Sem alertas</option></select><button id="addEventReminderButton" class="secondary" type="button">＋ Adicionar alerta</button></div><div id="eventReminderRows" class="reminder-rows"></div><div id="eventReminderPreview" class="reminder-preview"></div></fieldset>
+      <div class="sync-choice"><label class="toggle-field"><span>Sincronizar com Google Calendar</span><input id="eventSyncWanted" type="checkbox" checked></label></div>
+      <div id="eventValidation" class="validation-box neutral">A data precisa estar dentro do semestre selecionado.</div>
+      <div class="modal-actions"><button id="eventGoogleTemplateButton" class="secondary" type="button">Abrir preenchido no Google</button><button class="secondary" data-close="eventDialog" type="button">Cancelar</button><button class="primary" type="submit">Salvar evento</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="attendanceDialog" class="modal">
+    <form id="attendanceForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">FREQUÊNCIA</span><h2 id="attendanceDialogTitle">Registrar presença</h2></div><button class="icon-button" data-close="attendanceDialog" type="button">✕</button></div>
+      <input id="attendanceId" type="hidden">
+      <div class="form-grid">
+        <label>Semestre<select id="attendanceSemester" required></select></label>
+        <label>Disciplina<select id="attendanceSubject" required></select></label>
+        <label>Data<input id="attendanceDate" type="date" required></label>
+        <label>Status<select id="attendanceStatus" required><option value="unverified">Não verificada</option><option value="present">Presente</option><option value="late">Atrasado</option><option value="partial">Presença parcial</option><option value="absent">Ausente</option><option value="justified">Falta justificada</option><option value="cancelled">Aula cancelada</option></select></label>
+        <label>Períodos previstos<input id="attendanceTotalPeriods" type="number" min="1" step="1" value="2" required></label>
+        <label>Períodos presentes<input id="attendancePresentPeriods" type="number" min="0" step="1" value="0" required></label>
+        <label>Início<input id="attendanceStart" type="time"></label>
+        <label>Fim<input id="attendanceEnd" type="time"></label>
+        <label class="span-2">Observações<textarea id="attendanceNotes" rows="3"></textarea></label>
+      </div>
+      <div class="checkin-box"><div><strong>Validação assistida por localização</strong><small>Não substitui a chamada oficial.</small></div><button id="attendanceCheckinButton" class="secondary" type="button">📍 Validar localização agora</button><p id="attendanceCheckinResult" class="muted">Nenhum check-in realizado.</p></div>
+      <div class="modal-actions"><button class="secondary" data-close="attendanceDialog" type="button">Cancelar</button><button class="primary" type="submit">Salvar presença</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="passwordDialog" class="modal small-modal">
+    <form id="passwordForm" method="dialog">
+      <div class="modal-head"><div><span class="eyebrow">SEGURANÇA</span><h2>Alterar senha</h2></div><button class="icon-button" data-close="passwordDialog" type="button">✕</button></div>
+      <div class="form-grid one-column"><label>Senha atual<input id="currentPassword" type="password" required></label><label>Nova senha<input id="newPassword" type="password" minlength="4" required></label><label>Confirmar nova senha<input id="newPasswordConfirm" type="password" minlength="4" required></label></div>
+      <div class="modal-actions"><button class="secondary" data-close="passwordDialog" type="button">Cancelar</button><button class="primary" type="submit">Alterar senha</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="trashDialog" class="modal large-modal">
+    <div class="modal-head"><div><span class="eyebrow">RECUPERAÇÃO</span><h2>Lixeira local</h2></div><button class="icon-button" data-close="trashDialog" type="button">✕</button></div>
+    <div id="trashList" class="agenda-list"></div>
+    <div class="modal-actions"><button id="emptyTrashButton" class="danger" type="button">Esvaziar lixeira</button><button class="secondary" data-close="trashDialog" type="button">Fechar</button></div>
+  </dialog>
+
+  <aside id="notificationDrawer" class="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><span class="eyebrow">AVISOS</span><h2>Central acadêmica</h2></div><button id="closeNotificationDrawer" class="icon-button" type="button">✕</button></div>
+    <div id="notificationList" class="compact-list"></div>
+  </aside>
+  <div id="drawerBackdrop" class="drawer-backdrop hidden"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
